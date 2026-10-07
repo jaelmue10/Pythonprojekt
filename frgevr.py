@@ -5,19 +5,13 @@ from rich.text import Text
 
 console = Console()
 
-# Hier wird festgelegt, dass die Kontakte in einer Datei namens telefonbuch.txt
-# gespeichert werden. Sie liegt im gleichen Ordner wie das Programm.
 DATEI = Path(__file__).resolve().parent / "telefonbuch.txt"
 
 
-# Diese Ausnahme zeigt an, dass eine Aktion mit 7 abgebrochen wurde.
 class AktionAbgebrochen(Exception):
     pass
 
 
-
-# Diese Funktion wird für alle Eingaben während einer Aktion verwendet.
-# Bei der Eingabe 7 wird die aktuelle Aktion abgebrochen.
 def eingabeLesen(frage):
     antwort = input(frage).strip()
 
@@ -27,9 +21,6 @@ def eingabeLesen(frage):
     return antwort
 
 
-
-# Dieser Abschnitt liest die bereits gespeicherten Kontakte aus der Textdatei.
-# Falls die Datei noch nicht existiert, wird sie zuerst erstellt.
 def eintraegeLaden():
     eintraege = []
 
@@ -38,49 +29,53 @@ def eintraegeLaden():
 
     with open(DATEI, "r", encoding="utf-8") as datei:
         for zeile in datei:
-            teile = zeile.strip().split(";")
+            teile = zeile.rstrip("\n").split(";")
 
-            if len(teile) == 3:
-                eintrag = {
+            # Alte Einträge haben drei Felder, neue vier.
+            if len(teile) in (3, 4):
+                eintraege.append({
                     "vorname": teile[0],
                     "nachname": teile[1],
-                    "telefon": teile[2]
-                }
-                eintraege.append(eintrag)
+                    "telefon": teile[2],
+                    "adresse": teile[3] if len(teile) == 4 else ""
+                })
 
     return eintraege
 
 
-
-# Dieser Abschnitt schreibt alle Kontakte in die Textdatei.
-# Auch nach dem Bearbeiten oder Löschen werden alle Einträge neu geschrieben.
 def eintragSpeichern(eintraege):
     with open(DATEI, "w", encoding="utf-8") as datei:
         for eintrag in eintraege:
             datei.write(
                 f'{eintrag["vorname"]};'
                 f'{eintrag["nachname"]};'
-                f'{eintrag["telefon"]}\n'
+                f'{eintrag["telefon"]};'
+                f'{eintrag["adresse"]}\n'
             )
 
 
+def eintragAnzeigen(eintrag, nummer=None):
+    anfang = f"{nummer}) " if nummer is not None else ""
+    ausgabe = (
+        f'{anfang}{eintrag["vorname"]} '
+        f'{eintrag["nachname"]}: {eintrag["telefon"]}'
+    )
 
-# Dieser Abschnitt zeigt alle Kontakte mit einer Nummer an.
+    if eintrag["adresse"]:
+        ausgabe += f' | Adresse: {eintrag["adresse"]}'
+
+    print(ausgabe)
+
+
 def eintraegeAnzeigen(eintraege):
-    if len(eintraege) == 0:
+    if not eintraege:
         print("Das Telefonbuch ist leer.")
         return
 
-    for nummer in range(len(eintraege)):
-        eintrag = eintraege[nummer]
-        print(
-            f'{nummer + 1}) {eintrag["vorname"]} '
-            f'{eintrag["nachname"]}: {eintrag["telefon"]}'
-        )
+    for nummer, eintrag in enumerate(eintraege, start=1):
+        eintragAnzeigen(eintrag, nummer)
 
 
-
-# Dieser Abschnitt prüft das grundlegende Format einer Schweizer Telefonnummer.
 def telefonnummerPruefen(eingabe):
     nummer = eingabe.replace(" ", "").replace("-", "")
 
@@ -95,9 +90,6 @@ def telefonnummerPruefen(eingabe):
     return ""
 
 
-
-# Dieser Abschnitt fragt nach Vor- und Nachnamen.
-# Mit 7 kann die Eingabe jederzeit abgebrochen werden.
 def namenEinlesen():
     while True:
         vorname = eingabeLesen("Vorname (7 = abbrechen): ")
@@ -115,32 +107,41 @@ def namenEinlesen():
             return vorname, nachname
 
 
-
-# Dieser Abschnitt fragt nach einer Telefonnummer.
-# Bei 7 wird abgebrochen, ohne den angefangenen Kontakt zu speichern.
 def telefonnummerEinlesen():
-    
     while True:
         eingabe = eingabeLesen("Telefonnummer (7 = abbrechen): ")
         telefon = telefonnummerPruefen(eingabe)
 
-        if telefon != "":
+        if telefon:
             return telefon
 
         print("Ungültige Nummer. Beispiel: 079 123 45 67")
 
 
+def adresseEinlesen():
+    while True:
+        adresse = eingabeLesen(
+            "Adresse (optional, Enter = leer, 7 = abbrechen): "
+        )
 
-# Dieser Abschnitt erstellt einen neuen Kontakt.
-# Gespeichert wird erst, wenn alle Angaben vollständig eingegeben wurden.
+        if ";" in adresse:
+            print("Ein Semikolon ist in der Adresse nicht erlaubt.")
+        elif len(adresse) > 200:
+            print("Die Adresse darf höchstens 200 Zeichen lang sein.")
+        else:
+            return adresse
+
+
 def eintragErfassen(eintraege):
     vorname, nachname = namenEinlesen()
     telefon = telefonnummerEinlesen()
+    adresse = adresseEinlesen()
 
     eintrag = {
         "vorname": vorname,
         "nachname": nachname,
-        "telefon": telefon
+        "telefon": telefon,
+        "adresse": adresse
     }
 
     if eintrag in eintraege:
@@ -151,27 +152,21 @@ def eintragErfassen(eintraege):
     eintragSpeichern(eintraege)
     print("Eintrag gespeichert.")
 
-    
 
-# Dieser Abschnitt sucht nach Namen oder nach dem Anfang einer Telefonnummer.
-# Leerzeichen und Bindestriche in gespeicherten Nummern werden bei der Suche
-# nicht berücksichtigt. Auch Nummern mit +41 oder 0041 können gefunden werden.
 def eintragSuchen(eintraege):
     suchtext = eingabeLesen(
         "Name oder Anfang der Telefonnummer suchen (7 = abbrechen): "
     ).lower()
 
-    if suchtext == "":
+    if not suchtext:
         print("Bitte einen Suchbegriff eingeben.")
         return
 
-    # Leerzeichen und Bindestriche werden aus der Suche entfernt.
     nummernsuche = suchtext.replace(" ", "").replace("-", "")
     gefunden = False
 
     for eintrag in eintraege:
         if nummernsuche.isdigit():
-            # Die gespeicherte Telefonnummer wird für den Vergleich vereinheitlicht.
             telefon = eintrag["telefon"].replace(" ", "").replace("-", "")
 
             if telefon.startswith("+41"):
@@ -187,23 +182,17 @@ def eintragSuchen(eintraege):
             )
 
         if passt:
-            print(
-                f'{eintrag["vorname"]} {eintrag["nachname"]}: '
-                f'{eintrag["telefon"]}'
-            )
+            eintragAnzeigen(eintrag)
             gefunden = True
 
     if not gefunden:
         print("Kein Eintrag gefunden.")
 
 
-
-# In diesem Abschnitt wird ein Kontakt anhand seiner Nummer ausgewählt.
-# Mit Enter oder 7 kommt man zum Menü zurück.
 def nummerAuswaehlen(eintraege):
     eintraegeAnzeigen(eintraege)
 
-    if len(eintraege) == 0:
+    if not eintraege:
         return -1
 
     eingabe = eingabeLesen(
@@ -217,15 +206,12 @@ def nummerAuswaehlen(eintraege):
         nummer = int(eingabe)
 
         if 1 <= nummer <= len(eintraege):
-            return nummer - 1  # Listen beginnen beim Index 0.
+            return nummer - 1
 
     print("Keine gültige Nummer gewählt.")
     return -1
 
 
-
-# Dieser Abschnitt ändert einen vorhandenen Kontakt.
-# Der alte Eintrag bleibt erhalten, wenn bei einer Eingabe 7 gedrückt wird.
 def eintragEditieren(eintraege):
     nummer = nummerAuswaehlen(eintraege)
 
@@ -235,11 +221,13 @@ def eintragEditieren(eintraege):
     print("Neue Angaben eingeben:")
     vorname, nachname = namenEinlesen()
     telefon = telefonnummerEinlesen()
+    adresse = adresseEinlesen()
 
     neuer_eintrag = {
         "vorname": vorname,
         "nachname": nachname,
-        "telefon": telefon
+        "telefon": telefon,
+        "adresse": adresse
     }
 
     if neuer_eintrag in eintraege and neuer_eintrag != eintraege[nummer]:
@@ -251,9 +239,6 @@ def eintragEditieren(eintraege):
     print("Eintrag geändert.")
 
 
-
-# Dieser Abschnitt löscht einen Kontakt erst nach einer Bestätigung.
-# Mit 7 kann auch die Bestätigung abgebrochen werden.
 def eintragLoeschen(eintraege):
     nummer = nummerAuswaehlen(eintraege)
 
@@ -278,8 +263,6 @@ def eintragLoeschen(eintraege):
         print("Bitte j, n oder 7 eingeben.")
 
 
-
-# Dieser Abschnitt ordnet jeder Zahl im Menü die passende Aktion zu.
 def menuSelektion(wahl, eintraege):
     match wahl:
         case "1":
@@ -298,9 +281,6 @@ def menuSelektion(wahl, eintraege):
             print("Du bist bereits im Hauptmenü.")
 
 
-
-# Dieser Abschnitt zeigt das Hauptmenü mit Farben und einem Rahmen an.
-# Die Funktionen des Telefonbuchs bleiben dabei unverändert.
 def menueAnzeigen():
     titel = Text("☎  TELEFONBUCH  ☎", style="bold bright_cyan")
     titel.justify = "center"
@@ -325,9 +305,6 @@ def menueAnzeigen():
     console.print(Panel(menue, title=titel, border_style="bright_cyan", width=52))
 
 
-
-# Das ist der Hauptablauf. Ein Abbruch mit 7 wird hier aufgefangen,
-# damit das Hauptmenü wieder angezeigt wird.
 def main():
     eintraege = eintraegeLaden()
     wahl = ""
@@ -346,138 +323,8 @@ def main():
             print("Aktion abgebrochen. Es wurde nichts geändert.")
 
 
-
-# Dieser Abschnitt fragt nach einer freiwilligen Adresse.
-# Mit Enter bleibt die Adresse leer. Mit 7 wird die Aktion abgebrochen.
-def adresseEinlesen():
-    while True:
-        adresse = eingabeLesen(
-            "Adresse (optional, Enter = leer, 7 = abbrechen): "
-        )
-
-        # Das Semikolon trennt die Angaben in der Textdatei.
-        # Deshalb darf es nicht in der Adresse vorkommen.
-        if ";" in adresse:
-            print("Ein Semikolon ist in der Adresse nicht erlaubt.")
-        elif len(adresse) > 200:
-            print("Die Adresse darf höchstens 200 Zeichen lang sein.")
-        else:
-            return adresse
-
-
-
-# Dieser Abschnitt liest Kontakte mit und ohne Adresse aus der Textdatei.
-# Bereits gespeicherte Kontakte ohne Adresse bleiben dadurch erhalten.
-def eintraegeLaden():
-    eintraege = []
-
-    with open(DATEI, "a", encoding="utf-8"):
-        pass
-
-    with open(DATEI, "r", encoding="utf-8") as datei:
-        for zeile in datei:
-            teile = zeile.rstrip("\n").split(";")
-
-            # Alte Einträge haben drei Angaben, neue Einträge vier.
-            if len(teile) in (3, 4):
-                eintrag = {
-                    "vorname": teile[0],
-                    "nachname": teile[1],
-                    "telefon": teile[2],
-                    "adresse": teile[3] if len(teile) == 4 else ""
-                }
-                eintraege.append(eintrag)
-
-    return eintraege
-
-
-
-# Dieser Abschnitt speichert alle Kontakte mit einem zusätzlichen
-# Feld für die Adresse. Das Feld darf auch leer sein.
-def eintragSpeichern(eintraege):
-    with open(DATEI, "w", encoding="utf-8") as datei:
-        for eintrag in eintraege:
-            datei.write(
-                f'{eintrag["vorname"]};'
-                f'{eintrag["nachname"]};'
-                f'{eintrag["telefon"]};'
-                f'{eintrag["adresse"]}\n'
-            )
-
-
-
-# Dieser Abschnitt zeigt die Adresse nur an, wenn eine eingetragen wurde.
-def eintraegeAnzeigen(eintraege):
-    if len(eintraege) == 0:
-        print("Das Telefonbuch ist leer.")
-        return
-
-    for nummer in range(len(eintraege)):
-        eintrag = eintraege[nummer]
-        print(
-            f'{nummer + 1}) {eintrag["vorname"]} '
-            f'{eintrag["nachname"]}: {eintrag["telefon"]}'
-        )
-
-        if eintrag["adresse"]:
-            print(f'   Adresse: {eintrag["adresse"]}')
-
-
-
-# Dieser Abschnitt erstellt einen Kontakt mit einer freiwilligen Adresse.
-# Gespeichert wird erst, wenn alle Eingaben abgeschlossen sind.
-def eintragErfassen(eintraege):
-    vorname, nachname = namenEinlesen()
-    telefon = telefonnummerEinlesen()
-    adresse = adresseEinlesen()
-
-    eintrag = {
-        "vorname": vorname,
-        "nachname": nachname,
-        "telefon": telefon,
-        "adresse": adresse
-    }
-
-    if eintrag in eintraege:
-        print("Dieser Eintrag ist bereits vorhanden.")
-        return
-
-    eintraege.append(eintrag)
-    eintragSpeichern(eintraege)
-    print("Eintrag gespeichert.")
-
-
-
-# Dieser Abschnitt ändert einen Kontakt und fragt auch nach der Adresse.
-# Bei 7 bleibt der bisherige Kontakt unverändert.
-# Mit Enter wird eine bisherige Adresse entfernt.
-def eintragEditieren(eintraege):
-    nummer = nummerAuswaehlen(eintraege)
-
-    if nummer == -1:
-        return
-
-    print("Neue Angaben eingeben:")
-    vorname, nachname = namenEinlesen()
-    telefon = telefonnummerEinlesen()
-    adresse = adresseEinlesen()
-
-    neuer_eintrag = {
-        "vorname": vorname,
-        "nachname": nachname,
-        "telefon": telefon,
-        "adresse": adresse
-    }
-
-    if neuer_eintrag in eintraege and neuer_eintrag != eintraege[nummer]:
-        print("Dieser Eintrag ist bereits vorhanden.")
-        return
-
-    eintraege[nummer] = neuer_eintrag
-    eintragSpeichern(eintraege)
-    print("Eintrag geändert.")
-
-# Dieser letzte Abschnitt startet das Programm.
 if __name__ == "__main__":
     main()
 
+
+    
