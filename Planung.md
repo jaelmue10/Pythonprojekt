@@ -56,6 +56,3 @@ Eine Funktion gilt als fertig, wenn wir sie mit normalen und fehlerhaften Eingab
 
 Am Ende jedes Tages prüfen wir, was funktioniert, was noch offen ist und ob wir die Aufgabenliste anpassen müssen.
 
-## Planung Jaël
-
-Kommt hier hin
