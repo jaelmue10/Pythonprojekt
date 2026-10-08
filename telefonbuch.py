@@ -298,32 +298,70 @@ def menuSelektion(wahl, eintraege):
             print("Du bist bereits im Hauptmenü.")
 
 
-
-# Dieser Abschnitt zeigt das Hauptmenü mit Farben und einem Rahmen an.
-# Die Funktionen des Telefonbuchs bleiben dabei unverändert.
 def menueAnzeigen():
-    titel = Text("☎  TELEFONBUCH  ☎", style="bold bright_cyan")
-    titel.justify = "center"
+    console.clear()
 
-    menue = Text()
-    menue.append("\n")
-    menue.append("  1  ", style="bold bright_yellow")
-    menue.append("Alle Einträge anzeigen\n")
-    menue.append("  2  ", style="bold bright_yellow")
-    menue.append("Neuen Eintrag erfassen\n")
-    menue.append("  3  ", style="bold bright_yellow")
-    menue.append("Eintrag suchen\n")
-    menue.append("  4  ", style="bold bright_yellow")
-    menue.append("Eintrag editieren\n")
-    menue.append("  5  ", style="bold bright_yellow")
-    menue.append("Eintrag löschen\n")
-    menue.append("  6  ", style="bold bright_yellow")
-    menue.append("Beenden\n\n")
-    menue.append("Während einer Eingabe: 7 = zurück zum Menü", style="dim")
+    # Kopfzeile
+    kopf = Text()
+    kopf.append("  T E L E F O N B U C H  ", style="bold bright_white")
+    kopf.append(" /  KONTAKTE", style="bold bright_cyan")
 
     console.print()
-    console.print(Panel(menue, title=titel, border_style="bright_cyan", width=52))
+    console.print(
+        Panel(
+            kopf,
+            border_style="bright_cyan",
+            width=54,
+            padding=(1, 1),
+        )
+    )
 
+    # Menü
+    menue = Text()
+    menue.append("  HAUPTMENÜ\n", style="bold bright_cyan")
+    menue.append("  ─────────────────────────────────────────\n\n", style="dim cyan")
+
+    punkte = [
+        ("1", "ANZEIGEN",   "Alle Kontakte ansehen"),
+        ("2", "ERFASSEN",   "Neuen Kontakt speichern"),
+        ("3", "SUCHEN",     "Kontakt schnell finden"),
+        ("4", "BEARBEITEN", "Kontakt ändern"),
+        ("5", "LÖSCHEN",    "Kontakt entfernen"),
+    ]
+
+    for nummer, titel, beschreibung in punkte:
+        menue.append("  [ ", style="dim cyan")
+        menue.append(nummer, style="bold bright_yellow")
+        menue.append(" ]  ", style="dim cyan")
+        menue.append(f"{titel:<12}", style="bold white")
+        menue.append(f" {beschreibung}\n", style="dim")
+
+    menue.append("\n  ─────────────────────────────────────────\n", style="dim cyan")
+    menue.append("  [ ", style="dim cyan")
+    menue.append("6", style="bold bright_yellow")
+    menue.append(" ]  ", style="dim cyan")
+    menue.append("BEENDEN", style="bold bright_red")
+    menue.append("      Programm verlassen\n", style="dim")
+
+    console.print(
+        Panel(
+            menue,
+            border_style="cyan",
+            width=54,
+            padding=(1, 1),
+        )
+    )
+
+    # Kurzer Hinweis statt zusätzlicher Menü-Kachel
+    hinweis = Text()
+    hinweis.append("  STATUS  ", style="bold bright_green")
+    hinweis.append("Bereit", style="green")
+    hinweis.append("     |     ", style="dim")
+    hinweis.append("7", style="bold yellow")
+    hinweis.append(" = Aktion abbrechen", style="dim")
+
+    console.print(hinweis)
+    console.print()
 
 
 # Das ist der Hauptablauf. Ein Abbruch mit 7 wird hier aufgefangen,

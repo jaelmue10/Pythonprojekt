@@ -40,4 +40,3 @@ Jana;Portmann;+41 76 681 37 25;
 Levin;Nussbaumer;+41 79 517 42 86;
 Mara;Imhof;+41 78 293 65 14;
 Sandro;Aebischer;+41 76 748 51 93;
-j;j;0799966969;
